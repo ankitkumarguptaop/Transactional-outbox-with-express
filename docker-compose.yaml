@@ -1,0 +1,81 @@
+# version: '3.9'
+
+services:
+  # Backend service
+  backend:
+    container_name: backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dependency-base
+    ports:
+      - ${APP_PORT:-8080}:${APP_PORT:-8080}
+    volumes:
+      - .:/app
+    networks:
+      - event_network
+    restart: on-failure
+    tty: true
+    stdin_open: true
+    expose:
+      - ${APP_PORT:-8080}
+  # postgres DB service
+  database:
+    image: postgres:16.1-alpine3.18
+    container_name: database
+    restart: always
+    ports:
+      - ${DB_FORWARD_PORT:-5432}:5432
+    environment:
+      - POSTGRES_USER=${DB_USER_NAME:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-Ankit@1234}
+      - POSTGRES_DB=${DB_NAME:-demodb}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - event_network
+  
+  #pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    ports:
+      - ${PGADMIN_FORWARD_PORT:-8888}:80
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL:-"ankit@gmail.com"}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD:-"Ankit@1234"}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - event_network
+  
+  # RabbitMQ service
+  rabbitmq:
+    container_name: rabbitmq
+    image: 'rabbitmq:3-management-alpine'
+    restart: always
+    ports:
+      - "${RABBITMQ_FORWARD_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_FORWARD_PORT:-15672}:15672"
+    environment: 
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME:-guest}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-guest}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_VHOST:-/}
+    volumes:
+        - rabbitmq:/var/lib/rabbitmq/
+        - rabbitmq_logs:/var/log/rabbitmq
+    networks:
+      - event_network
+networks:
+  event_network:
+    name: events_shared_network
+    external: true
+
+volumes:
+  pg_data: {}
+  pgadmin_data: {}
+  rabbitmq: {}
+  rabbitmq_logs: {}
+
+
