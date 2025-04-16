@@ -1,6 +1,10 @@
-import { outboxMessageRepository } from "../repositories";
+import {
+  inboxMessageRepository,
+  outboxMessageRepository,
+} from "../repositories";
 import { Producer } from "../workers/producer";
 const producer = new Producer();
+
 export const outboxMessage = async () => {
   try {
     const pendingMessages = await outboxMessageRepository.findAll({
@@ -17,25 +21,32 @@ export const outboxMessage = async () => {
     console.log(pendingMessages);
 
     pendingMessages.map(async (message: any, index) => {
-      await producer.publishMessage(
-        message.routing_key,
-        message.message,
-        message.signature
-      );
-
-      await outboxMessageRepository.update({
-        payload: {
-          status: "SENT",
-        },
-        criteria: {
-          id: message.id,
-        },
+      const isMessageAlredySended = await inboxMessageRepository.findOne({
+        message_id: message.id,
       });
+
+      if (isMessageAlredySended) {
+        return "This message Alredy sended";
+      } else {
+        await outboxMessageRepository.update({
+          payload: {
+            status: "SENT",
+          },
+          criteria: {
+            id: message.id,
+          },
+        });
+        await producer.publishMessage(
+          message.routing_key,
+          message.message,
+          message.signature
+        );
+      }
     });
+    return "Sucessfully send Emails ";
   } catch (error: any) {
     throw new Error(error);
   }
-  return "Sucessfully send Emails ";
 };
 
 outboxMessage();

@@ -2,6 +2,7 @@ import amqp from "amqplib";
 
 import { config } from "../configs/rabbit";
 import { mailProcessor } from "../processors";
+import { inBoxMessageService } from "../services";
 
 const processors: any = {
   sendMail: mailProcessor.sendMail,
@@ -26,8 +27,11 @@ class Consumer {
         try {
           const data = JSON.parse(msg?.content?.toString());
           console.log("DATATAATATATA", data.message);
-          await handle_processor(data.message);
-          channel.ack(msg);
+          const isAlredySended=  await inBoxMessageService.inBoxMessage(msg);
+          if(!isAlredySended){
+            await handle_processor(data.message);
+            channel.ack(msg);
+          }
         } catch (error: any) {
           console.log(error.message);
           channel.nack(msg, false, false);
@@ -39,4 +43,4 @@ class Consumer {
     });
   }
 }
-export {Consumer};
+export { Consumer };

@@ -3,6 +3,7 @@ import { initUserModel, User } from './user';
 import { initProductModel, product } from './product';
 import { initImageModel ,image } from './image';
 import { initOutBoxMessageModel ,OutboxMessage } from './outbox-message';
+import { initInBoxMessageModel ,InboxMessage } from './inbox-message';
 import configObj from '../configs/dbconfig';
 
 const config = configObj['development'];
@@ -21,10 +22,12 @@ initUserModel(sequelize);
 initProductModel(sequelize);
 initImageModel(sequelize);
 initOutBoxMessageModel(sequelize)
+initInBoxMessageModel(sequelize)
 
 User.associate?.({});
 product.associate?.({image,User});
 image.associate?.({product});
 OutboxMessage.associate?.({});
+InboxMessage.associate?.({});
 
-export { sequelize, User  ,product ,image  ,OutboxMessage };
+export { sequelize, User  ,product ,image  ,OutboxMessage  ,InboxMessage};
